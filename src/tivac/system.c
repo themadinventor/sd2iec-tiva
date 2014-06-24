@@ -26,76 +26,22 @@
 #include "config.h"
 #include "system.h"
 
-
-#if 0
-/* single-copy "rewrite" of LPC_GPIOINT_TypeDef */
-/* for array-like access to the two ports       */
-typedef struct {
-  volatile uint32_t IntStatus;  // only exists in [0]
-  volatile uint32_t IOIntStatR;
-  volatile uint32_t IOIntStatF;
-  volatile uint32_t IOIntClr;
-  volatile uint32_t IOIntEnR;
-  volatile uint32_t IOIntEnF;
-  volatile uint32_t unused[2];
-} lpc_gpioint_single_t;
-
-static lpc_gpioint_single_t *lpc_gpioint_ptr = (lpc_gpioint_single_t *)LPC_GPIOINT;
-#endif
-
 /* Early system initialisation */
 void system_init_early(void) {
 	asm volatile ("cpsid i");
 
+	ROM_SysCtlDelay(2000000);
+
 	ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);
+
+	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, GPIO_PIN_2|GPIO_PIN_3);
 }
 
 void i2c_init(void) { }
 
 /* Late initialisation, increase CPU clock */
 void system_init_late(void) {
-#if 0
-  /* Set flash accelerator to 5 CPU cycle access time */
-  LPC_SC->FLASHCFG = (LPC_SC->FLASHCFG & 0xffff0fff) | (4 << 12);
-
-  /* Enable main oscillator, range 1-20MHz */
-  BITBAND(LPC_SC->SCS, 5) = 1;
-
-  /* Wait until stable */
-  while (!BITBAND(LPC_SC->SCS, 6)) ;
-
-  /* Use main oscillator as system clock source */
-  LPC_SC->CLKSRCSEL = 1;
-
-  /* Set up PLL0 multiplier and pre-divisor */
-  LPC_SC->PLL0CFG  = ((PLL_PREDIV-1) << 16) | (PLL_MULTIPLIER-1);
-  LPC_SC->PLL0FEED = 0xaa;
-  LPC_SC->PLL0FEED = 0x55;
-
-  /* Enable PLL0 */
-  LPC_SC->PLL0CON  = 1;
-  LPC_SC->PLL0FEED = 0xaa;
-  LPC_SC->PLL0FEED = 0x55;
-
-  /* Increase CPU clock divider */
-  LPC_SC->CCLKCFG = PLL_DIVISOR-1;
-
-  /* Wait until PLL locks */
-  while (!(LPC_SC->PLL0STAT & BV(26))) ;
-
-  /* Connect PLL0 */
-  LPC_SC->PLL0CON  = 3;
-  LPC_SC->PLL0FEED = 0xaa;
-  LPC_SC->PLL0FEED = 0x55;
-
-  /* Enable GPIO interrupt */
-  NVIC_EnableIRQ(EINT3_IRQn);
-
-  // FIXME: Debugging
-  //LPC_GPIO0->FIODIR |= BV(11) | BV(10);
-  //LPC_GPIO2->FIODIR |= BV(0) | BV(1);
-  //set_debugstate(0);
-#endif
 }
 
 /* Put MCU in low-power mode */
@@ -122,11 +68,13 @@ void system_reset(void) {
 /* Disable interrupts */
 void disable_interrupts(void) {
 	asm volatile ("cpsid i");
+	ROM_GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_2, 0);
 }
 
 /* Enable interrupts */
 void enable_interrupts(void) {
 	asm volatile ("cpsie i");
+	ROM_GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_2, -1);
 }
 
 /*** Timer/GPIO interrupt demux ***/
@@ -141,6 +89,8 @@ void GPIOA_Handler(void)
 {
 	uint32_t state = ROM_GPIOIntStatus(GPIO_PORTA_BASE);
 
+	ROM_GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_3, 0);
+
 	if (state & IEC_PIN_ATN) {
 		iec_atn_handler();
 	}
@@ -150,6 +100,8 @@ void GPIOA_Handler(void)
 		iec_clock_handler();
 	}
 #endif
+
+	ROM_GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_3, -1);
 
 	ROM_GPIOIntClear(GPIO_PORTA_BASE, state);
 }
@@ -209,7 +161,7 @@ void EINT3_IRQHandler(void) {
 }
 #endif
 
-void HardFault_Handler(void) {
+/*void HardFault_Handler(void) {
   set_test_led(1);
   while (1) ;
 }
@@ -227,4 +179,4 @@ void BusFault_Handler(void) {
 void UsageFault_Handler(void) {
   set_test_led(1);
   while (1) ;
-}
+}*/

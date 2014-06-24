@@ -4,8 +4,8 @@
 #copy:
 #	cp $(TARGET).bin /mbed
 
-bin:
-	$(E) "  wej wej"
+#bin:
+#	$(E) "  wej wej"
 #	$(E) "  CHKSUM $(TARGET).bin"
 #	$(Q)scripts/lpc17xx/lpc_checksum.pl $(TARGET).bin
 

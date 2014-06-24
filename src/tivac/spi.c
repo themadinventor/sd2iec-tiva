@@ -1,5 +1,6 @@
 /* sd2iec - SD/MMC to Commodore serial bus interface/controller
    Copyright (C) 2007-2013  Ingo Korb <ingo@akana.de>
+   Copyright (C) 2014  Fredrik Ahlberg <fredrik@z80.se>
 
    Inspired by MMC2IEC by Lars Pontoppidan et al.
 
@@ -61,77 +62,25 @@ void spi_init(spi_speed_t speed) {
 			SSI_MODE_MASTER, speed == SPI_SPEED_FAST ? 16e6 : 400e3, 8);
 
 	ROM_SSIEnable(SSI1_BASE);
-
-#if 0
-  /* Set clock prescaler to 1:1 */
-  BITBAND(LPC_SC->SSP_PCLKREG, SSP_PCLKBIT) = 1;
-
-  /* configure data format - 8 bits, SPI, CPOL=0, CPHA=0, 1 clock per bit */
-  SSP_REGS->CR0 = (8-1);
-
-  /* set clock prescaler */
-  if (speed == SPI_SPEED_FAST) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FAST;
-  } else {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_SLOW;
-  }
-
-  /* Enable SSP */
-  SSP_REGS->CR1 = BV(1);
-
-  /* Enable DMA controller, little-endian mode */
-  BITBAND(LPC_SC->PCONP, 29) = 1;
-  LPC_GPDMA->DMACConfig = 1;
-#endif
 }
 
 void spi_tx_byte(uint8_t data) {
 	uint32_t dummy;
 	ROM_SSIDataPut(SSI1_BASE, data);
 	ROM_SSIDataGet(SSI1_BASE, &dummy);
-#if 0
-  /* Wait until TX fifo can accept data */
-  while (!BITBAND(SSP_REGS->SR, SSP_TNF)) ;
-
-  /* Send byte */
-  SSP_REGS->DR = data;
-#endif
 }
 
 uint8_t spi_rx_byte(void) {
 	uint32_t data;
-	
 	ROM_SSIDataPut(SSI1_BASE, 0xff);
 	ROM_SSIDataGet(SSI1_BASE, &data);
-
 	return data;
-
-#if 0
-  /* Wait until SSP is not busy */
-  while (BITBAND(SSP_REGS->SR, SSP_BSY)) ;
-
-  /* Clear RX fifo */
-  while (BITBAND(SSP_REGS->SR, SSP_RNE))
-    (void) SSP_REGS->DR;
-
-  /* Transmit a single dummy byte */
-  SSP_REGS->DR = 0xff;
-
-  /* Wait until answer has been received */
-  while (!BITBAND(SSP_REGS->SR, SSP_RNE)) ;
-
-  return SSP_REGS->DR;
-#endif
 }
 
 void spi_tx_block(const void *ptr, unsigned int length) {
   const uint8_t *data = (const uint8_t *)ptr;
 
   while (length--) {
-    /* Wait until TX fifo can accept data */
-    /*while (!BITBAND(SSP_REGS->SR, SSP_TNF)) ;
-
-    SSP_REGS->DR = *data++;*/
 	  ROM_SSIDataPut(SSI1_BASE, *data++);
   }
 }
@@ -228,30 +177,10 @@ void spi_set_speed(spi_speed_t speed) {
 			SSI_MODE_MASTER, speed == SPI_SPEED_FAST ? 16e6 : 400e3, 8);
 
 	ROM_SSIEnable(SSI1_BASE);
-
-
-#if 0
-  /* Wait until TX fifo is empty */
-  while (!BITBAND(SSP_REGS->SR, 0)) ;
-
-  /* Disable SSP (FIXME: Is this required?) */
-  SSP_REGS->CR1 = 0;
-
-  /* Change clock divisor */
-  if (speed == SPI_SPEED_FAST) {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_FAST;
-  } else {
-    SSP_REGS->CPSR = SSP_CLK_DIVISOR_SLOW;
-  }
-
-  /* Enable SSP */
-  SSP_REGS->CR1 = BV(1);
-#endif
 }
 
 void spi_select_device(spi_device_t dev) {
   /* Wait until TX fifo is empty */
-  //while (!BITBAND(SSP_REGS->SR, 0)) ;
   while (ROM_SSIBusy(SSI1_BASE)) ;
 
   if (dev == SPIDEV_CARD0 || dev == SPIDEV_ALLCARDS)

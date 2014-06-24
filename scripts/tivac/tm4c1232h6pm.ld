@@ -1,6 +1,7 @@
-/* Linker script for LPC1768
+/* Linker script for TM4C1232H6PM
  *
  * Written 2010 by Ingo Korb
+ * Modified 2014 by Fredrik Ahlberg
  *
  * Partially based on the linker scripts of avr-libc
  */

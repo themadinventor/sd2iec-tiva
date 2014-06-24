@@ -1,5 +1,6 @@
 /* sd2iec - SD/MMC to Commodore serial bus interface/controller
    Copyright (C) 2007-2013  Ingo Korb <ingo@akana.de>
+   Copyright (C) 2014  Fredrik Ahlberg <fredrik@z80.se>
 
    Inspired by MMC2IEC by Lars Pontoppidan et al.
 
@@ -90,7 +91,6 @@ unsigned char uart_gotc(void) {
 }
 
 void uart_init(void) {
-	// TODO - Init gpio
 	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 	ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0|GPIO_PIN_1);
 

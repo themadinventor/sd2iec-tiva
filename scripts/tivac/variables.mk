@@ -10,11 +10,12 @@ ifeq ($(CONFIG_UART_DEBUG),y)
 endif
 
 # Various RTC implementations
-ifeq ($(CONFIG_RTC_LPC17XX),y)
-  SRC += rtc.c lpc17xx/rtc_lpc17xx.c
-endif
+#ifeq ($(CONFIG_RTC_LPC17XX),y)
+#  SRC += rtc.c lpc17xx/rtc_lpc17xx.c
+#endif
 
-# I2C is always needed for the config EEPROM
+## I2C is always needed for the config EEPROM
+# we'll use the internal eeprom...
 NEED_I2C := n
 SRC += tivac/arch-eeprom.c
 
@@ -27,8 +28,8 @@ NM = arm-none-eabi-nm
 
 
 #---------------- Bootloader ----------------
-BINARY_LENGTH = 0x80000
-CRCGEN        = scripts/lpc17xx/crcgen-lpc.pl
+#BINARY_LENGTH = 0x80000
+#CRCGEN        = scripts/lpc17xx/crcgen-lpc.pl
 
 
 #---------------- Architecture variables ----------------
